@@ -123,15 +123,28 @@ class CoordinateConverterWidget(QWidget):
         button_row.addWidget(copy_button)
         button_row.addStretch(1)
 
-        layout = QVBoxLayout(self)
-        layout.addLayout(controls)
-        layout.addWidget(QLabel("Input (multi-line free format):"))
-        layout.addWidget(self.input_text, 1)
-        layout.addLayout(button_row)
-        layout.addWidget(QLabel("Output (tab-separated, ready to copy):"))
-        layout.addWidget(self.output_text, 1)
-        layout.addWidget(QLabel("Figure (to scale, origin marked):"))
-        layout.addWidget(self.plot_widget, 1)
+        left_col = QVBoxLayout()
+        left_col.addLayout(controls)
+        left_col.addWidget(QLabel("Input (multi-line free format):"))
+        left_col.addWidget(self.input_text, 1)
+        left_col.addLayout(button_row)
+        left_col.addWidget(QLabel("Output (tab-separated, ready to copy):"))
+        left_col.addWidget(self.output_text, 1)
+
+        right_col = QVBoxLayout()
+        right_col.addWidget(QLabel("Figure (to scale, origin marked):"))
+        right_col.addWidget(self.plot_widget, 1)
+
+        layout = QHBoxLayout(self)
+        layout.addLayout(left_col, 1)
+        layout.addLayout(right_col, 1)
+
+        # place example data
+        self.input_text.setPlainText(
+            "Origin: 3.8163243, 52.7022056\n"
+            "P1 3.826240, 52.704478\n"
+            "P2 3.818058, 52.695705"
+        )
 
     def convert(self) -> None:
         try:
@@ -149,8 +162,17 @@ class CoordinateConverterWidget(QWidget):
         for name, x, y in results:
             lines.append(f"{name}\t{x:.3f}\t{y:.3f}")
         text = "\n".join(lines)
-        self.output_text.setPlainText(text)
+        
         self.plot_widget.set_points(results)
+
+        # create dave code
+        text += "\n\n# Dave code to create points in model"
+        for name, x, y in results:
+            text += f'\ns.new_point("{name}", position = ({x:.3f}, {y:.3f}, 0.0))'
+        
+
+
+        self.output_text.setPlainText(text)
 
     def copy_output(self) -> None:
         QApplication.clipboard().setText(self.output_text.toPlainText())
