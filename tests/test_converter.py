@@ -1,6 +1,6 @@
 import unittest
 
-from converter import ParsedPoint, convert_text, parse_coordinate_pair, parse_points, to_relative_xy
+from converter import ParsedPoint, convert_rows, convert_text, parse_coordinate_pair, parse_points, to_relative_xy
 
 
 class ConverterTests(unittest.TestCase):
@@ -43,6 +43,17 @@ class ConverterTests(unittest.TestCase):
         self.assertGreater(result[0][2], 0)
         self.assertLess(result[1][1], 0)
         self.assertLess(result[1][2], 0)
+
+    def test_convert_rows_returns_named_xy_values(self):
+        raw = """
+        Origin: 3.8163243, 52.7022056
+        P1 3.826240, 52.704478
+        """
+        rows = convert_rows(raw, coord_format="decimal", lon_positive="E", lat_positive="N")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0][0], "P1")
+        self.assertGreater(rows[0][1], 0)
+        self.assertGreater(rows[0][2], 0)
 
 
 if __name__ == "__main__":
