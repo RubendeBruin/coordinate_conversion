@@ -3,7 +3,8 @@ import re
 from dataclasses import dataclass
 
 EARTH_RADIUS_M = 6_378_137.0
-_NUMBER_RE = re.compile(r"[-+]?\d+(?:[\.,]\d+)?")
+NUMBER_PATTERN = re.compile(r"[-+]?\d+(?:[\.,]\d+)?")
+LINE_PATTERN = re.compile(r"^([^:;\t\s]+)\s*[:;]?\s+(.*)$")
 
 
 @dataclass(frozen=True)
@@ -14,15 +15,21 @@ class ParsedPoint:
 
 
 def _extract_numbers(text: str) -> list[float]:
-    return [float(match.group(0).replace(",", ".")) for match in _NUMBER_RE.finditer(text)]
+    return [float(match.group(0).replace(",", ".")) for match in NUMBER_PATTERN.finditer(text)]
 
 
 def _apply_positive_direction(value: float, positive_direction: str) -> float:
-    if value < 0:
-        return value
-    if positive_direction in {"W", "S"}:
-        return -value
-    return value
+    direction_factor = -1.0 if positive_direction in {"W", "S"} else 1.0
+    return value * direction_factor
+
+
+def _combine_degrees_minutes(degrees: float, minutes: float) -> float:
+    minute_component = abs(minutes) / 60.0
+    if degrees < 0:
+        return degrees - minute_component
+    if degrees > 0:
+        return degrees + minute_component
+    return minutes / 60.0
 
 
 def parse_coordinate_pair(payload: str, coord_format: str, lon_positive: str, lat_positive: str) -> tuple[float, float]:
@@ -36,8 +43,8 @@ def parse_coordinate_pair(payload: str, coord_format: str, lon_positive: str, la
         if len(numbers) < 4:
             raise ValueError("Expected degrees+minutes for longitude and latitude (4 values).")
         lon_deg, lon_min, lat_deg, lat_min = numbers[0], numbers[1], numbers[2], numbers[3]
-        lon_raw = math.copysign(abs(lon_deg) + abs(lon_min) / 60.0, lon_deg)
-        lat_raw = math.copysign(abs(lat_deg) + abs(lat_min) / 60.0, lat_deg)
+        lon_raw = _combine_degrees_minutes(lon_deg, lon_min)
+        lat_raw = _combine_degrees_minutes(lat_deg, lat_min)
     else:
         raise ValueError(f"Unsupported coordinate format: {coord_format}")
 
@@ -55,7 +62,7 @@ def parse_points(raw_text: str, coord_format: str, lon_positive: str, lat_positi
         if not stripped:
             continue
 
-        match = re.match(r"^([^:;\t\s]+)\s*[:;]?\s+(.*)$", stripped)
+        match = LINE_PATTERN.match(stripped)
         if not match:
             raise ValueError(f"Could not parse line: {line}")
 

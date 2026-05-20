@@ -26,9 +26,11 @@ class ConverterTests(unittest.TestCase):
     def test_west_positive_setting(self):
         lon, _ = parse_coordinate_pair("3.8163243, 52.7022056", "decimal", "W", "N")
         self.assertLess(lon, 0)
+        lon_from_negative_input, _ = parse_coordinate_pair("-3.8163243, 52.7022056", "decimal", "W", "N")
+        self.assertGreater(lon_from_negative_input, 0)
 
     def test_origin_required(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "No origin found"):
             parse_points("P1 3.82, 52.70", "decimal", "E", "N")
 
     def test_relative_values_have_east_north_signs(self):
