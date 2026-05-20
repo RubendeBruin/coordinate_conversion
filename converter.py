@@ -97,9 +97,15 @@ def to_relative_xy(origin: ParsedPoint, points: list[ParsedPoint]) -> list[tuple
     return results
 
 
-def convert_text(raw_text: str, coord_format: str, lon_positive: str, lat_positive: str) -> str:
+def convert_rows(
+    raw_text: str, coord_format: str, lon_positive: str, lat_positive: str
+) -> list[tuple[str, float, float]]:
     origin, points = parse_points(raw_text, coord_format, lon_positive, lat_positive)
-    results = to_relative_xy(origin, points)
+    return to_relative_xy(origin, points)
+
+
+def convert_text(raw_text: str, coord_format: str, lon_positive: str, lat_positive: str) -> str:
+    results = convert_rows(raw_text, coord_format, lon_positive, lat_positive)
     lines = ["Name\tX\tY"]
     for name, x, y in results:
         lines.append(f"{name}\t{x:.3f}\t{y:.3f}")
